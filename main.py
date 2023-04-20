@@ -1,3 +1,5 @@
+import sqlite3
+
 nameItem = str(input("Qual item deve ser adicionado ao estoque? "))
 barCode = str(input("Digite o código de barras do item: "))
 amountItem = int(input("Digite a quantidade que deseja adicionar ao estoque: "))
@@ -15,19 +17,38 @@ class Stock:
 stock_item = Stock(nameItem, barCode, amountItem)
 stock_item.processing()
 
-with open("database.txt", "a") as arquivo:
-    arquivo.write(f"{stock_item.name}, {stock_item.code}, {stock_item.amount}\n")
+conn = sqlite3.connect("estoque.db")
+cur = conn.cursor()
 
-with open("database.txt", "r") as f:
-    linhas = f.readlines()
+# Criar tabela "items" caso não exista
+cur.execute("CREATE TABLE IF NOT EXISTS items (id INTEGER PRIMARY KEY, name TEXT, code TEXT, amount INTEGER)")
+
+# Inserir dados na tabela "items"
+cur.execute("INSERT INTO items (name, code, amount) VALUES (?, ?, ?)",(stock_item.name, stock_item.code, stock_item.amount))
+conn.commit()
+conn.close()
+
+conn = sqlite3.connect("estoque.db")
+cur = conn.cursor()
+consulta = "SELECT * FROM items ORDER BY ROWID DESC LIMIT 10"
+cur.execute(consulta)
+resultados = cur.fetchall()
+for linha in resultados:
+    print(linha)
+conn.close()
 
 total_stockItems = 0
-for linha in linhas:
-    dados = linha.strip().split(", ")
-    nome_item = dados[0]
-    codigo_item = dados[1]
-    quantidade_item = int(dados[2])
+
+conn = sqlite3.connect("estoque.db")
+cur = conn.cursor()
+consulta = "SELECT * FROM items"
+cur.execute(consulta)
+resultados = cur.fetchall()
+for linha in resultados:
+    nome_item = linha[1]
+    codigo_item = linha[2]
+    quantidade_item = linha[3]
     if nome_item == nameItem and codigo_item == barCode:
         total_stockItems += quantidade_item
-
+conn.close()
 print(f"O item {nameItem} foi adicionado! Ao total, há no estoque nesse momento {total_stockItems} itens dessa categoria!")
